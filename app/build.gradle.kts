@@ -9,8 +9,8 @@ android {
         applicationId = "com.forgeai.assistant"
         minSdk = 33
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.2.2-g1-polish"
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0) + 100
+        versionName = "0.2.3-g1-signed"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes { release { isMinifyEnabled = false } }

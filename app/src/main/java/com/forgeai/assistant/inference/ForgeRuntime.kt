@@ -265,8 +265,12 @@ class ForgeRuntime private constructor(private val context: Context) {
                 engine.loadModel(modelFile.absolutePath)
                 engine.setSystemPrompt(
                     "You are Forge, a practical personal Android assistant running locally. " +
-                    "You do not have internet, device-control tools or persistent memory in this version. " +
-                    "Be helpful, concise and transparent about limitations. /no_think"
+                    "You have no internet, device-control tools or long-term memory in this version. " +
+                    "You can use details the user voluntarily shares in the current conversation. " +
+                    "If the user says their favorite color is purple, acknowledge that and remember it " +
+                    "for follow-up questions within this conversation. " +
+                    "Never claim you cannot access information the user just told you. " +
+                    "Be helpful, concise and transparent about limitations."
                 )
                 operationStatus = "Ready: offline chat is available."
             } catch (e: Exception) {
@@ -295,6 +299,12 @@ class ForgeRuntime private constructor(private val context: Context) {
     fun send(text: String) {
         val prompt = text.trim()
         if (prompt.isEmpty() || busy || generating || !modelReady) return
+        // Native llama.cpp also tracks prior turns. Explicit short context helps
+        // the compact Qwen3 model answer immediate follow-ups reliably.
+        val recentUserMessages = messages
+            .filter { it.speaker == "You" }
+            .map { it.message }
+        val modelPrompt = SessionPromptBuilder.build(recentUserMessages, prompt)
         messages.add(ChatLine("You", prompt))
         messages.add(ChatLine("Forge", ""))
         val responseIndex = messages.lastIndex
@@ -303,7 +313,7 @@ class ForgeRuntime private constructor(private val context: Context) {
             val start = SystemClock.elapsedRealtime()
             val filter = AnswerStreamFilter()
             try {
-                engine.sendUserPrompt(prompt, predictLength = 256).collect { piece ->
+                engine.sendUserPrompt(modelPrompt, predictLength = 256).collect { piece ->
                     // Filter thought tags and all internal text before reaching UI state.
                     messages[responseIndex] = ChatLine("Forge", filter.append(piece))
                 }

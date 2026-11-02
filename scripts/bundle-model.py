@@ -18,22 +18,24 @@ DEST.mkdir(parents=True, exist_ok=True)
 
 api = HfApi()
 info = api.model_info(REPOSITORY, files_metadata=True)
-sibling = next((s for s in info.siblings if s.rfilename == FILENAME), None)
+sibling = next((s for s in info.siblings if s.rfilename == FILENAME or s.rfilename.endswith("/" + FILENAME)), None)
 if sibling is None:
-    raise RuntimeError("GGUF file not found in repository metadata")
+    choices = [s.rfilename for s in info.siblings if "Q4_K_M" in s.rfilename]
+    raise RuntimeError(f"GGUF path not found; related files: {choices[:15]}")
 
+remote_path = sibling.rfilename
 revision = os.environ.get("FORGE_MODEL_REVISION", info.sha)
 # Recent Hugging Face Xet-hosted repositories may omit sibling.lfs.
 # For Git LFS and Xet large binaries, HTTP ETag is the file SHA-256.
 metadata = get_hf_file_metadata(
-    hf_hub_url(repo_id=REPOSITORY, filename=FILENAME, revision=revision)
+    hf_hub_url(repo_id=REPOSITORY, filename=remote_path, revision=revision)
 )
 expected_sha = str(metadata.etag).strip('"').lower()
 if len(expected_sha) != 64 or not all(ch in "0123456789abcdef" for ch in expected_sha):
     raise RuntimeError("No trustworthy 64-character SHA-256 metadata found; refusing unverified bundle")
-print(f"Model: {REPOSITORY}/{FILENAME} at revision {revision}")
+print(f"Model: {REPOSITORY}/{remote_path} at revision {revision}")
 src = pathlib.Path(
-    hf_hub_download(repo_id=REPOSITORY, filename=FILENAME, revision=revision)
+    hf_hub_download(repo_id=REPOSITORY, filename=remote_path, revision=revision)
 )
 checksum = hashlib.sha256()
 size = 0

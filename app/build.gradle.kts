@@ -10,7 +10,7 @@ android {
         minSdk = 33
         targetSdk = 36
         versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0) + 100
-        versionName = "0.2.4-g1-conversation-fix"
+        versionName = "0.2.5-g1-native-multiturn"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes { release { isMinifyEnabled = false } }

@@ -12,4 +12,5 @@ git -C "$DEST" checkout --detach "$PIN"
 cp scripts/llama-module.gradle.kts "$DEST/examples/llama.android/lib/build.gradle.kts"
 # Limiting the runtime context decreases RAM pressure on a normal phone.
 sed -i 's/DEFAULT_CONTEXT_SIZE    = 8192/DEFAULT_CONTEXT_SIZE    = 2048/' "$DEST/examples/llama.android/lib/src/main/cpp/ai_chat.cpp"
+python3 scripts/patch-llama-android.py
 echo "Pinned llama.cpp Android source ready at $PIN"

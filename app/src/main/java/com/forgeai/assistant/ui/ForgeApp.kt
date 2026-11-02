@@ -18,7 +18,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.forgeai.assistant.inference.ForgeRuntime
 import com.forgeai.assistant.ui.screens.ChatScreen
 import com.forgeai.assistant.ui.screens.DiagnosticsScreen
 import com.forgeai.assistant.ui.screens.HistoryScreen
@@ -37,6 +39,8 @@ internal enum class ForgePage(val label: String) {
 
 @Composable
 fun ForgeApp() {
+    val context = LocalContext.current
+    val runtime = androidx.compose.runtime.remember { ForgeRuntime.obtain(context) }
     var selectedName by rememberSaveable { mutableStateOf(ForgePage.SETUP.name) }
     val current = ForgePage.entries.firstOrNull { it.name == selectedName } ?: ForgePage.SETUP
 
@@ -51,7 +55,7 @@ fun ForgeApp() {
                     modifier = Modifier.padding(horizontal = 20.dp)
                 )
                 Text(
-                    text = "On-device personal assistant   •   G0 foundation",
+                    text = "Local inference • G1",
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
                 )
@@ -71,16 +75,14 @@ fun ForgeApp() {
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
             when (current) {
-                ForgePage.SETUP -> SetupScreen(onOpenChat = { selectedName = ForgePage.CHAT.name })
-                ForgePage.CHAT -> ChatScreen()
+                ForgePage.SETUP -> SetupScreen(runtime, onOpenChat = { selectedName = ForgePage.CHAT.name })
+                ForgePage.CHAT -> ChatScreen(runtime)
                 ForgePage.HISTORY -> HistoryScreen()
                 ForgePage.MEMORY -> MemoryScreen()
                 ForgePage.SETTINGS -> SettingsScreen()
-                ForgePage.DIAGNOSTICS -> DiagnosticsScreen()
+                ForgePage.DIAGNOSTICS -> DiagnosticsScreen(runtime)
             }
         }
     }

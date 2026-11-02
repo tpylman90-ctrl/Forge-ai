@@ -1,36 +1,30 @@
-# Forge AI — Implementation Gates
+# Forge AI — implementation gates
 
-This document distinguishes shipped behavior from future plans.
+## G0: verified CI
+- Six navigable Compose screens and dark theme
+- Public source with no personal data
+- GitHub Actions produced a debug APK
 
-## G0 — Android foundation
-- Six navigable Compose screens
-- Dark interface
-- Public-repo-safe project and ignored local data
-- GitHub Actions debug APK job
-- No runtime permissions
-- **Acceptance:** Gradle compiles an installable APK; all screens open and switch cleanly.
+## G1: local intelligence (requires phone verification)
+- Official llama.cpp Android JNI built from pinned revision
+- Arm64 CPU-only 64-bit APK, Android 13+
+- Document picker GGUF import, header validation, copy to app-private storage
+- SHA-256 checksum on import; temporary file removed if import fails
+- Load/unload model, system prompt, streamed local tokens, stop generation
+- Diagnostics page and state/error handling; no internet permission
+- **Acceptance:** import Qwen3-0.6B Q4 GGUF, load, converse in airplane mode, stop mid-response, recover from invalid model selection without losing a valid one
+- **Limit:** responses are ephemeral; persistent conversation storage comes in G2
 
-## G1 — Offline inference
-- Evaluate llama.cpp and Qwen3-0.6B GGUF (not bundled)
-- Import and checksum model into app-private storage via user-selected document
-- Explicit load/unload, streaming generation, cancel, diagnostics
-- No internet dependency for inference
+## G2: conversation persistence
+- Room SQLite, threads, durable history, edit/delete, session recovery
 
-## G2 — Conversation persistence
-- Room SQLite database, thread history, deletion, durable storage
-- UI and performance tests
+## G3: opt-in long-term memory
+- User-approved memory store and retrieval
 
-## G3 — Opt-in long-term memory
-- Separate typed approved-memory store, editable and deletable
-- Context retrieval scoped to user preferences and current task
+## G4: stabilization and privacy hardening
+- Performance/thermal metrics, crash and airplane-mode testing; backup/export and delete controls
 
-## G4 — Release hardening
-- Performance and crash testing, airplane-mode tests
-- Backup exclusion, export/deletion controls, secure storage review
+## Later
+- Voice, Android tools, assistant-role support, multi-step tasks and tested model updates
 
-## Later (M2 onward)
-- Push-to-talk offline voice, permission-controlled Android actions,
-  assistant-role support, planning and evaluated model updates
-
-**Guardrail:** A mock interface is not an AI model. Each gate must pass device tests
-before status is upgraded.
+Never mark a milestone verified merely because code was committed.

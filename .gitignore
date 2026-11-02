@@ -8,7 +8,8 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
-# Generated or personal data: NEVER publish
+# Generated/vendor / personal data
+/vendor/
 *.apk
 *.aab
 *.gguf

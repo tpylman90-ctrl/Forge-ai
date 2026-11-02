@@ -9,30 +9,18 @@ import os
 import pathlib
 import shutil
 
-from huggingface_hub import HfApi, hf_hub_download, get_hf_file_metadata, hf_hub_url
+from huggingface_hub import hf_hub_download
 
-REPOSITORY = "tensorblock/Qwen_Qwen3-0.6B-GGUF"
+REPOSITORY = "second-state/Qwen3-0.6B-GGUF"
 FILENAME = "Qwen3-0.6B-Q4_K_M.gguf"
+# Published file SHA-256, independently visible on the Hugging Face file page.
+EXPECTED_SHA256 = "dd6df9d5627007fa6e29cf2fff3464b1ab01a789fa8220c61ff5f3cf4989ce0e"
 DEST = pathlib.Path("app/src/main/assets")
 DEST.mkdir(parents=True, exist_ok=True)
 
-api = HfApi()
-info = api.model_info(REPOSITORY, files_metadata=True)
-sibling = next((s for s in info.siblings if s.rfilename == FILENAME or s.rfilename.endswith("/" + FILENAME)), None)
-if sibling is None:
-    choices = [s.rfilename for s in info.siblings if "Q4_K_M" in s.rfilename]
-    raise RuntimeError(f"GGUF path not found; related files: {choices[:15]}")
-
-remote_path = sibling.rfilename
-revision = os.environ.get("FORGE_MODEL_REVISION", info.sha)
-# Recent Hugging Face Xet-hosted repositories may omit sibling.lfs.
-# For Git LFS and Xet large binaries, HTTP ETag is the file SHA-256.
-metadata = get_hf_file_metadata(
-    hf_hub_url(repo_id=REPOSITORY, filename=remote_path, revision=revision)
-)
-expected_sha = str(metadata.etag).strip('"').lower()
-if len(expected_sha) != 64 or not all(ch in "0123456789abcdef" for ch in expected_sha):
-    raise RuntimeError("No trustworthy 64-character SHA-256 metadata found; refusing unverified bundle")
+revision = os.environ.get("FORGE_MODEL_REVISION", "main")
+remote_path = FILENAME
+expected_sha = EXPECTED_SHA256
 print(f"Model: {REPOSITORY}/{remote_path} at revision {revision}")
 src = pathlib.Path(
     hf_hub_download(repo_id=REPOSITORY, filename=remote_path, revision=revision)
@@ -62,7 +50,7 @@ shutil.copyfile(license_path, DEST / "MODEL_LICENSE.txt")
 (DEST / "MODEL_ATTRIBUTION.txt").write_text(
     "Forge AI model: Qwen3-0.6B\n"
     "Original publisher: Qwen\n"
-    "Quantization: TensorBlock, Q4_K_M\n"
+    "Quantization: Second State, Q4_K_M\n"
     f"Source: https://huggingface.co/{REPOSITORY}\n"
     "License: Apache License 2.0\n"
     f"Model revision: {revision}\n"

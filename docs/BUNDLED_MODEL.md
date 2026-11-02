@@ -4,8 +4,8 @@ Forge AI includes an offline model by default starting with version 0.2.1 G1 bun
 
 - Model: Qwen3-0.6B Q4_K_M GGUF
 - Original publisher: Qwen
-- Quantization: TensorBlock
-- Source: https://huggingface.co/tensorblock/Qwen_Qwen3-0.6B-GGUF
+- Quantization: Second State
+- Source: https://huggingface.co/second-state/Qwen3-0.6B-GGUF
 - Original model: https://huggingface.co/Qwen/Qwen3-0.6B
 - Model license: Apache 2.0
 - Approximately 484 MB; the installable APK is much larger than G0/G1
@@ -20,3 +20,5 @@ No network access is required at runtime. About 0.5 GB additional free disk spac
 If distributing further, check and retain the license and original model attribution. This is a local assistant test model, not an automatic update to the model's learned parameters.
 
 No model file should ever be pushed to the public Git repository.
+
+Pinned SHA-256: `dd6df9d5627007fa6e29cf2fff3464b1ab01a789fa8220c61ff5f3cf4989ce0e` (Qwen3-0.6B-Q4_K_M.gguf)

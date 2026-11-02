@@ -34,11 +34,11 @@ jobs:
         with:
           gradle-version: '9.6.0'
       - name: Compile debug APK
-        run: gradle --no-daemon :app:assembleDebug
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: forge-ai-g1-bundled-debug-apk
+          name: forge-ai-g1-polish-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

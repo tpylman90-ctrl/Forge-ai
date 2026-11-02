@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +48,7 @@ fun ForgeApp() {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(top = 8.dp)) {
                 Text(
                     text = "FORGE  /  AI",
                     style = MaterialTheme.typography.headlineMedium,

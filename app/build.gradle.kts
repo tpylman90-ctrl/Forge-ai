@@ -9,8 +9,8 @@ android {
         applicationId = "com.forgeai.assistant"
         minSdk = 33
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.2.1-g1-bundled"
+        versionCode = 4
+        versionName = "0.2.2-g1-polish"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes { release { isMinifyEnabled = false } }
@@ -32,4 +32,5 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    testImplementation("junit:junit:4.13.2")
 }

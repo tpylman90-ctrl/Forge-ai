@@ -15,7 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -302,19 +301,31 @@ class ForgeRuntime private constructor(private val context: Context) {
         generation = scope.launch {
             generating = true
             val start = SystemClock.elapsedRealtime()
+            val filter = AnswerStreamFilter()
             try {
                 engine.sendUserPrompt(prompt, predictLength = 256).collect { piece ->
-                    val old = messages[responseIndex]
-                    messages[responseIndex] = old.copy(message = old.message + piece)
+                    // Filter thought tags and all internal text before reaching UI state.
+                    messages[responseIndex] = ChatLine("Forge", filter.append(piece))
                 }
+                val answer = filter.finish()
+                messages[responseIndex] = ChatLine(
+                    "Forge",
+                    answer.ifBlank { "No visible answer was generated. Please try again." }
+                )
                 operationStatus = "Response completed locally."
             } catch (e: CancellationException) {
+                messages[responseIndex] = ChatLine(
+                    "Forge",
+                    filter.finish().ifBlank { "Stopped before an answer was generated." }
+                )
                 operationStatus = "Generation stopped."
+                throw e
             } catch (e: Exception) {
+                messages[responseIndex] = ChatLine(
+                    "Forge",
+                    filter.finish().ifBlank { "[Generation failed: ${e.message}]" }
+                )
                 operationStatus = "Generation error: ${e.message}"
-                if (messages[responseIndex].message.isEmpty()) {
-                    messages[responseIndex] = ChatLine("Forge", "[Generation failed: ${e.message}]")
-                }
             } finally {
                 lastGenerationSeconds = (SystemClock.elapsedRealtime() - start) / 1000.0
                 lastResponseCharacters = messages[responseIndex].message.length

@@ -1,0 +1,33 @@
+# Android / Gradle
+.gradle/
+.idea/
+local.properties
+**/build/
+*.iml
+*.hprof
+captures/
+.externalNativeBuild/
+.cxx/
+# Generated or personal data: NEVER publish
+*.apk
+*.aab
+*.gguf
+*.bin
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.jks
+*.keystore
+*.pem
+*.p12
+*.key
+*.env
+.env.*
+/userdata/
+/backups/
+/logs/
+/models/
+/conversations/
+/secrets/

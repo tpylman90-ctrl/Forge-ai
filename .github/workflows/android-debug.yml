@@ -33,12 +33,44 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.6.0'
-      - name: Compile debug APK
-        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
-      - name: Upload APK
-        if: success()
+      - name: Verify tests and compile unsigned release
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleRelease
+      - name: Sign APK with persistent Android key
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          : "${ANDROID_KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64 repository secret}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing ANDROID_KEYSTORE_PASSWORD repository secret}"
+          : "${ANDROID_KEY_PASSWORD:?Missing ANDROID_KEY_PASSWORD repository secret}"
+          : "${ANDROID_KEY_ALIAS:?Missing ANDROID_KEY_ALIAS repository secret}"
+          umask 077
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/forge-ai.jks"
+          "$ANDROID_HOME/build-tools/36.0.0/zipalign" -f -p 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$RUNNER_TEMP/forge-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign \
+            --ks "$RUNNER_TEMP/forge-ai.jks" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --key-pass env:ANDROID_KEY_PASSWORD \
+            --out app/build/outputs/apk/release/forge-ai-signed.apk \
+            "$RUNNER_TEMP/forge-aligned.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify \
+            --verbose --print-certs app/build/outputs/apk/release/forge-ai-signed.apk
+      - name: Upload consistently signed Forge APK
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: forge-ai-g1-polish-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: forge-ai-stable-signed-apk
+          path: app/build/outputs/apk/release/forge-ai-signed.apk
           if-no-files-found: error
+          retention-days: 30
+      - name: Delete temporary signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/forge-ai.jks" "$RUNNER_TEMP/forge-aligned.apk"

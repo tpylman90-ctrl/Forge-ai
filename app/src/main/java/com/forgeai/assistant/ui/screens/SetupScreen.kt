@@ -24,10 +24,10 @@ fun SetupScreen(runtime: ForgeRuntime, onOpenChat: () -> Unit) {
             "Local AI engine",
             "Import a GGUF model from Downloads or another document provider. Models are copied to Forge's private storage. No model or conversations are uploaded.",
             listOf(
-                "Suggested first test: Qwen3-0.6B in Q4 GGUF format",
-                "64-bit ARM, Android 13+ • engine runs on CPU",
+                "Bundled model: Qwen3-0.6B Q4_K_M (Apache 2.0)",
+                "On first launch allow time and about 0.5 GB free storage for model setup",
                 "No network or file-management permission required",
-                "Keep at least 1 GB free above the model file size"
+                "You can still import another GGUF if you want to change models"
             )
         )
         Text("Native engine: ${runtime.engineStatus}")
@@ -41,7 +41,7 @@ fun SetupScreen(runtime: ForgeRuntime, onOpenChat: () -> Unit) {
             enabled = !runtime.busy && !runtime.generating && !runtime.modelReady,
             onClick = { picker.launch(arrayOf("*/*")) },
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Import GGUF file") }
+        ) { Text("Import a different GGUF (optional)") }
         Button(
             enabled = runtime.imported && !runtime.busy && !runtime.generating && !runtime.modelReady,
             onClick = { runtime.loadModel() },

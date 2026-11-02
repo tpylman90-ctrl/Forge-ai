@@ -3,6 +3,7 @@ package com.forgeai.assistant.inference
 import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
+import android.os.StatFs
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,6 +87,101 @@ class ForgeRuntime private constructor(private val context: Context) {
                     is InferenceEngine.State.Error -> "Inference error: ${s.exception.message ?: "Unknown error"}"
                 }
             }
+        }
+        initializeBundledModel()
+    }
+
+    /**
+     * On fresh installs, extract our bundled GGUF to private storage and verify
+     * it against the model SHA-256 produced by the build pipeline. Never
+     * overwrite a model the user has already imported.
+     *
+     * This uses a background dispatcher and does not require network access.
+     */
+    private fun initializeBundledModel() {
+        if (modelFile.isFile && modelSize > 0L) {
+            operationStatus = "Previously imported model ready to load."
+            loadModel()
+            return
+        }
+        scope.launch {
+            busy = true
+            var installed = false
+            val temporary = File(modelFile.parentFile, "bundled.gguf.part")
+            operationStatus = "Preparing bundled Qwen3 model on this device..."
+            try {
+                val details = withContext(Dispatchers.IO) {
+                    modelFile.parentFile?.mkdirs()
+                    val manifest = context.assets.open("forge-default.sha256").bufferedReader().use {
+                        it.readText().trim().split(Regex("\\s+"))
+                    }
+                    require(manifest.size >= 2 && manifest[0].length == 64) {
+                        "Missing bundled model checksum"
+                    }
+                    val expectedHash = manifest[0].lowercase()
+                    val expectedBytes = manifest[1].toLong()
+                    require(expectedBytes > 1_000_000L) { "Invalid bundled model size" }
+
+                    val freeBytes = StatFs(modelFile.parentFile!!.absolutePath).availableBytes
+                    require(freeBytes > expectedBytes + 96L * 1024 * 1024) {
+                        "Not enough free storage to unpack the bundled model"
+                    }
+
+                    val digest = MessageDigest.getInstance("SHA-256")
+                    var count = 0L
+                    context.assets.open("forge-default.gguf", android.content.res.AssetManager.ACCESS_STREAMING).use { input ->
+                        FileOutputStream(temporary).use { output ->
+                            val buffer = ByteArray(256 * 1024)
+                            while (true) {
+                                val n = input.read(buffer)
+                                if (n < 0) break
+                                count += n
+                                require(count <= maxModelBytes && count <= expectedBytes) {
+                                    "Bundled model size mismatch"
+                                }
+                                output.write(buffer, 0, n)
+                                digest.update(buffer, 0, n)
+                                if (count % (16L * 1024 * 1024) < buffer.size) {
+                                    val pct = (count * 100L / expectedBytes).toInt()
+                                    withContext(Dispatchers.Main) {
+                                        operationStatus = "Preparing offline model: ${pct}%"
+                                    }
+                                }
+                            }
+                            output.fd.sync()
+                        }
+                    }
+                    val actualHash = digest.digest().joinToString("") { "%02x".format(it) }
+                    require(count == expectedBytes && actualHash == expectedHash) {
+                        "Bundled model failed checksum verification"
+                    }
+                    FileInputStream(temporary).use { input ->
+                        val signature = ByteArray(4)
+                        require(input.read(signature) == 4 &&
+                            String(signature, Charsets.US_ASCII) == "GGUF") {
+                            "Bundled model has an invalid GGUF header"
+                        }
+                    }
+                    require(temporary.renameTo(modelFile)) {
+                        "Unable to install bundled model"
+                    }
+                    Pair(count, actualHash)
+                }
+                modelSize = details.first
+                modelHash = details.second
+                modelName = "Qwen3-0.6B Q4_K_M (built in)"
+                preferences.edit()
+                    .putString("name", modelName).putString("sha256", modelHash)
+                    .putLong("bytes", modelSize).apply()
+                installed = true
+                operationStatus = "Built-in model verified. Loading into RAM..."
+            } catch (e: Exception) {
+                operationStatus = "Bundled setup failed: ${e.message}. You can still import a GGUF manually."
+            } finally {
+                temporary.delete()
+                busy = false
+            }
+            if (installed) loadModel()
         }
     }
 
@@ -171,7 +267,7 @@ class ForgeRuntime private constructor(private val context: Context) {
                 engine.setSystemPrompt(
                     "You are Forge, a practical personal Android assistant running locally. " +
                     "You do not have internet, device-control tools or persistent memory in this version. " +
-                    "Be helpful, concise and transparent about limitations."
+                    "Be helpful, concise and transparent about limitations. /no_think"
                 )
                 operationStatus = "Ready: offline chat is available."
             } catch (e: Exception) {

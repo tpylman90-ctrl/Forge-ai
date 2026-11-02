@@ -6,7 +6,7 @@ import com.forgeai.assistant.inference.ForgeRuntime
 @Composable
 fun DiagnosticsScreen(runtime: ForgeRuntime) = ScreenCard(
     "Local AI Diagnostics",
-    "Build: Forge AI 0.2.0 — G1. Native llama.cpp library is built into this APK; model weights are not.",
+    "Build: Forge AI 0.2.0 — G1. Native llama.cpp and Qwen3-0.6B GGUF are bundled in this APK.",
     listOf(
         "Engine: ${runtime.engineStatus}",
         "Operation: ${runtime.operationStatus}",

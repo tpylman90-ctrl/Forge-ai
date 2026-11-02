@@ -9,8 +9,8 @@ android {
         applicationId = "com.forgeai.assistant"
         minSdk = 33
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0-g1"
+        versionCode = 3
+        versionName = "0.2.1-g1-bundled"
         ndk { abiFilters += "arm64-v8a" }
     }
     buildTypes { release { isMinifyEnabled = false } }

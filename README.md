@@ -1,27 +1,27 @@
 # Forge AI
 
-Offline-first Android personal AI assistant. This public repo contains source code and build tooling only. Personal chat data and GGUF model weights must never be checked in.
+Offline-first Android personal AI assistant. Public repo for source code only: **never commit** personal data or model weights.
 
-## Status
-- **G0: verified** — Kotlin/Compose 6-screen shell and GitHub Actions APK build.
-- **G1: implementation** — pinned official llama.cpp Android JNI and local GGUF import, model load/unload, streamed chat, stop and diagnostics.
-- **G2 onward: not implemented** — persistent conversations, long-term memory, voice and Android system actions.
+## Project status
+- G0: verified Kotlin/Jetpack Compose six-screen Android shell
+- G1 bundled: local llama.cpp inference, built-in Qwen3-0.6B Q4_K_M GGUF, streaming chat and diagnostics; APK build will verify packaging
+- G2 onward: persistent conversation storage, long-term memory, voice and controlled Android actions planned
 
-## Building from source
-G1 uses the upstream official llama.cpp Android engine at commit `3f8af15a76ac8675812e856da45454bafc90f12c`. It is downloaded as ignored vendor source at build time.
+## Download APK
+Open [GitHub Actions](https://github.com/tpylman90-ctrl/Forge-ai/actions/workflows/android-debug.yml), select the most recent **successful** run, download the APK artifact ZIP, extract `app-debug.apk` and install it on a 64-bit ARM Android 13+ device.
 
-1. Install JDK 17, Android SDK API 37, NDK 29.0.13113456, CMake 3.31.6, and Gradle 9.6.
-2. Run `bash scripts/setup-llama.sh` at the repo root.
-3. Run `gradle :app:assembleDebug`.
+Starting with G1 bundled, the APK contains the Qwen3-0.6B GGUF (about 484 MB). No separate model download is required. On first launch Forge extracts it to app-private storage, validates its SHA-256, then attempts to load it into memory. Device storage and RAM must still be sufficient. Model load success and actual responses require phone testing. The GGUF model can be manually replaced with another model later.
 
-Alternatively, use GitHub Actions → Build Android debug APK → successful run → Artifacts.
+## Build locally
+Requires Java 17, Gradle 9.6, SDK API 37.0, NDK 29.0.13113456, CMake 3.31.6, Python 3, and network access **only at build time**:
+```sh
+bash scripts/setup-llama.sh
+python -m pip install "huggingface_hub>=0.29,<2"
+python scripts/bundle-model.py
+gradle :app:assembleDebug
+```
 
-## Using G1
-Find a small, legitimate GGUF model from its publisher (start with Qwen3-0.6B Q4). Save the GGUF file in Downloads. Open Forge → Setup → Import GGUF → Load model → Chat. Import copies the file into private app storage and calculates SHA-256. Model inference is offline, with no INTERNET permission in the manifest. On first load Android needs time and memory for the model. Try airplane mode after loading.
-
-This version deliberately supports ARM64 devices running Android 13+ while evaluating real performance. It does not include a built-in model download flow.
-
-**Caveat:** A successful CI compile verifies packaging, not real-device model compatibility or tokens-per-second. This milestone is complete only after on-device testing of a real GGUF.
+See [model attribution and packaging](docs/BUNDLED_MODEL.md) and [device acceptance tests](docs/G1_PHONE_TESTS.md). The pinned llama.cpp Android library is sourced under its applicable license. The model is Apache-2.0 and its license text and attribution are included in the APK.
 
 ## Privacy
-No user memories, conversations, tokens, keystores, models, or exports belong in this public source repository. G1 chat is in-memory only; persistent chat and long-term memory are separate milestones.
+No INTERNET permission is required for offline chat. The installed model and its checksums live in Android private app storage, not GitHub. Conversation text is held only in memory until G2. Never upload private data, keys, signing credentials or GGUF weights into this repository.
